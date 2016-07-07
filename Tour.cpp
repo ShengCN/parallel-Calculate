@@ -10,14 +10,16 @@
 #include <algorithm>
 using namespace std;
 
-Tour::Tour(vector<City> tour)
+Tour::Tour(vector<City> tour, vector<City> all)
 {
+	allCity = all;
     this->tour = tour;
 }
 
-Tour::Tour()
+Tour::Tour(vector<City> allCities)
 {
-    tour.resize(SimulatedAnnealing::allCitys.size());
+	allCity = allCities;
+    tour.resize(allCity.size());
 }
 
 vector<City> Tour::getTour()
@@ -28,12 +30,11 @@ vector<City> Tour::getTour()
 //产生随机个体
 void Tour::generateIndividual()
 {
-    for(int cityIndex = 0; cityIndex < SimulatedAnnealing::allCitys.size();++cityIndex)
+    for(int cityIndex = 0; cityIndex < allCity.size();++cityIndex)
     {
-        setCity(cityIndex,SimulatedAnnealing::allCitys[cityIndex]);
+        setCity(cityIndex,allCity[cityIndex]);
     }
-    unsigned seed = (unsigned int) chrono::system_clock::now().time_since_epoch().count();
-    shuffle(tour.begin(),tour.end(),seed);
+    random_shuffle(tour.begin(),tour.end());
 }
 
 City Tour::getCity(int tourPosition)
@@ -62,6 +63,7 @@ int Tour::getDistance()
             City fromCity = getCity(cityIndex);
             City toCity;
             cityIndex + 1 < tour.size() ? toCity = getCity(cityIndex + 1) : toCity = getCity(0);
+			tourDistance += fromCity.distanceTo(toCity);
         }
         distance = tourDistance;
     }

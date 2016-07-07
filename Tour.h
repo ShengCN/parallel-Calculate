@@ -13,8 +13,8 @@ using namespace std;
 class Tour
 {
 public:
-    Tour();
     Tour(vector<City>);
+    Tour(vector<City>, vector<City>);
     vector<City> getTour();
     void generateIndividual();                      //建立随机个体
     City getCity(int tourPosition);                 //获取城市
@@ -26,7 +26,7 @@ public:
 private:
     vector<City> tour;  //经过的所有城市
     int distance;       //距离
-
+	vector<City> allCity;
 };
 
 

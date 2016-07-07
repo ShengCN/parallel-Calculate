@@ -3,21 +3,23 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
+using namespace std;
 
 class City
 {
 public:
     City(int x,int y)
     {
-        this.x = x;
-        this.y = y;
+        this->x = x;
+        this->y = y;
     }
 
     City()
     {
-        rand(0);
-        x = srand()%200;
-        y = srand()%200;
+		srand(time(0));
+        x = rand()%200;
+        y = rand()%200;
     }
 
     int getX()
