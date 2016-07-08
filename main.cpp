@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include "Tour.h"
 #include "SimulatedAnnealing.h"
+#include <fstream>
 using namespace std;
 
+int cityDis[20][20];
 vector<City> allCitys;
 
 // 计算接受的概率
@@ -14,6 +16,26 @@ double acceptanceProbability(int energy,int newEnergy, double temperature)
         return 1.0;
 
     return exp((energy - newEnergy)/temperature);
+}
+
+void initArray()
+{
+	ifstream in("tsp测试数据1.txt",ios::in);
+	int tmp = 0;
+	int count = 0;
+	if (in.is_open())
+	{
+		for (int i = 0; i < 20; ++i)
+		{
+			for (int j = 0; j < 20; ++j)
+			{
+				in >> cityDis[i][j];
+			}
+		}
+	}
+	else
+		return;
+	in.close();
 }
 
 // 获取近似解
@@ -77,65 +99,14 @@ Tour* getApproximateyResult()
 
 void initCity()
 {
-	City city(60, 200);
-	allCitys.push_back(city);
+	initArray();
 
-    City city2(180, 200);
-	allCitys.push_back(city2);
+	for(int i = 1;i <= 20; ++i)
+	{
+		City city(i);
+		allCitys.push_back((city));
+	}
 
-    City city3(80, 180);
-	allCitys.push_back(city3);
-
-    City city4(140, 180);
-	allCitys.push_back(city4);
-
-    City city5(20, 160);
-	allCitys.push_back(city5);
-
-    City city6(100, 160);
-	allCitys.push_back(city6);
-
-    City city7(200, 160);
-    allCitys.push_back(city7);
-
-    City city8(140, 140);
-    allCitys.push_back(city8);
-
-    City city9(40, 120);
-	allCitys.push_back(city9);
-
-    City city10(100, 120);
-	allCitys.push_back(city10);
-
-    City city11(180, 100);
-	allCitys.push_back(city11);
-
-    City city12(60, 80);
-	allCitys.push_back(city12);
-
-    City city13(120, 80);
-	allCitys.push_back(city13);
-
-    City city14(180, 60);
-	allCitys.push_back(city14);
-
-    City city15(20, 40);
-	allCitys.push_back(city15);
-
-	City city16(100, 40);
-	allCitys.push_back(city16);
-	
-	City city17(200, 40);
-	allCitys.push_back(city17);
-	
-	City city18(20, 20);
-	allCitys.push_back(city18);
-	
-	City city19(60, 20);
-	allCitys.push_back(city19);
-	
-	City city20(160, 20);
-	allCitys.push_back(city20);
 }
 
 
@@ -148,8 +119,9 @@ int main()
 	auto route = best->getTour();
 	for(auto index:route)
 	{
-		cout << index.getX() << "|" << index.getY() << "\t";
+		cout << index.getId() << "----->";
 	}
 
+	cout << endl;
 	system("pause");
 }

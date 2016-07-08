@@ -5,44 +5,28 @@
 #include <math.h>
 #include <time.h>
 using namespace std;
+#define test1 20
+extern int cityDis[20][20];
 
 class City
 {
 public:
-    City(int x,int y)
+	City() { id = 0; }
+    City(int i)
     {
-        this->x = x;
-        this->y = y;
+		id = i;
     }
 
-    City()
+    int distanceTo(int toId)
     {
-		srand(time(0));
-        x = rand()%200;
-        y = rand()%200;
+		return cityDis[id-1][toId-1];
     }
 
-    int getX()
-    {
-        return x;
-    }
 
-    int getY()
-    {
-        return y;
-    }
-
-    double distanceTo(City city)
-    {
-        int xDistance = abs(city.getX() - x);
-        int yDistance = abs(city.getY() - y);
-        return sqrt((xDistance*xDistance)+(yDistance*yDistance));
-    }
+	int getId() { return id; }
 
 private:
-    int x;
-    int y;
+	int id;
 };
-
 
 #endif CITY_H

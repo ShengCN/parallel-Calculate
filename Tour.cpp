@@ -61,9 +61,9 @@ int Tour::getDistance()
         for(int cityIndex = 0; cityIndex<tour.size();++cityIndex)
         {
             City fromCity = getCity(cityIndex);
-            City toCity;
+            City toCity = getCity(cityIndex);
             cityIndex + 1 < tour.size() ? toCity = getCity(cityIndex + 1) : toCity = getCity(0);
-			tourDistance += fromCity.distanceTo(toCity);
+			tourDistance += fromCity.distanceTo(toCity.getId());
         }
         distance = tourDistance;
     }
