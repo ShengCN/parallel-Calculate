@@ -53,6 +53,17 @@ int Tour::getTourSize()
     return (int) tour.size();
 }
 
+void Tour::setTour(vector<City> cities)
+{
+	this->tour = cities;
+	resetDis();
+}
+
+void Tour::resetDis()
+{
+	distance = 0;
+}
+
 int Tour::getDistance()
 {
     if(distance==0)

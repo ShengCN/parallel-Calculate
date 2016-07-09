@@ -21,8 +21,8 @@ public:
     void setCity(int tourPosition,City city);
     int getDistance();                              //获取当前距离的总长度
     int getTourSize();                              //获取当前路径城市数量
-
-
+	void setTour(vector<City>);						//设置当前路线
+	void resetDis();
 private:
     vector<City> tour;  //经过的所有城市
     int distance;       //距离
