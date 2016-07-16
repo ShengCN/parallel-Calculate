@@ -3,7 +3,6 @@
 //
 
 #include "Tour.h"
-#include "SimulatedAnnealing.h"
 #include <stdlib.h>
 #include <chrono>
 #include <random>
