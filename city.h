@@ -6,7 +6,7 @@
 #include <time.h>
 using namespace std;
 #define test1 20
-extern int cityDis[20][20];
+extern int cityDis[test1][test1];
 
 class City
 {

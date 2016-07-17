@@ -13,6 +13,7 @@ using namespace std;
 class Tour
 {
 public:
+	Tour(){}
     Tour(vector<City>);
     Tour(vector<City>, vector<City>);
     vector<City> getTour();
