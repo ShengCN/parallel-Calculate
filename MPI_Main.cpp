@@ -1,14 +1,14 @@
-#include <iostream>
+﻿#include <iostream>
 #include <math.h>
 #include <stdlib.h>
 #include <fstream>
 #include <vector>
 #include <random>
-#include <mpi.h>
 #include <omp.h>
 #include <math.h>
 #include "../../Parallel/Tour.h"
 #include "../../Parallel/city.h"
+#include <mpi.h>
 using std::cout;
 using std::fstream;
 using std::endl;
@@ -51,12 +51,12 @@ void initArray()
 }
 
 // 获取近似解
-void getApproximateyResult(int thread)
+void getApproximateyResult(int thread=0)
 {
 	random_device rd;
 	// 冷却概率
-	double coolingRate = 0.3;
-	int n = 100000;
+	double coolingRate = 0.003;
+	int n = 10;
 
 	// 初始的解决方案
 	Tour currentSolution(allCitys);
@@ -72,20 +72,7 @@ void getApproximateyResult(int thread)
 	auto local_currentSolution = best;
 	auto local_best = best;
 	int i;
-
-	// 自定义数据类型
-	int blockLength[] = {16,4,16};
-	MPI::Datatype oldTypes[] = { MPI_COMBINER_VECTOR,MPI_INT,MPI_COMBINER_VECTOR };
-	// 计算偏移量
-	MPI::Aint addressOffsets[] = { 0,16,20 };
-	MPI::Datatype newType = MPI::Datatype::Create_struct(
-		sizeof(blockLength) / sizeof(int),
-		blockLength,
-		addressOffsets,
-		oldTypes
-	);
-	newType.Commit();
-	
+	int* local_current_tour = best.getTourArray();
 
 	int my_rank, comm_sz;
 	// parallel region
@@ -98,7 +85,7 @@ void getApproximateyResult(int thread)
 	{
 
 		local_currentSolution = best;
-
+		auto local_current_dis = local_currentSolution.getDistance();
 		// parallel calculate
 		for (i = my_rank*(n / comm_sz); i < (my_rank + 1)*(n / comm_sz); ++i)
 		{
@@ -127,14 +114,15 @@ void getApproximateyResult(int thread)
 			{
 				local_currentSolution.setTour(newSolution.getTour());
 			}
-
 		}
 
 		// local_best 重新更新值
 		// send and receive to get 
 		if (my_rank != 0)
 		{
-			MPI_Send(&local_currentSolution, sizeof(local_currentSolution), newType, 0,0,MPI_COMM_WORLD);
+			MPI_Send(&local_current_dis, 1, MPI_INT, 0,0,MPI_COMM_WORLD);
+			local_current_tour = local_currentSolution.getTourArray();
+			MPI_Send(&local_current_tour, test1, MPI_INT, 0, 1, MPI_COMM_WORLD);
 		}
 		else
 		{
@@ -145,10 +133,11 @@ void getApproximateyResult(int thread)
 
 			for(int src = 1; src<comm_sz;++src)
 			{
-				MPI_Recv(&local_currentSolution, sizeof(local_currentSolution), newType, src, 0, MPI_COMM_WORLD, MPI_STATUSES_IGNORE);
-				if(best.getDistance()>local_currentSolution.getDistance())
+				MPI_Recv(&local_current_dis, sizeof(local_current_dis), MPI_INT, src, 0, MPI_COMM_WORLD, MPI_STATUSES_IGNORE);
+				if(best.getDistance()>local_current_dis)
 				{
-					best = local_currentSolution;
+					MPI_Recv(&local_current_tour, 20, MPI_INT, src, 1, MPI_COMM_WORLD, MPI_STATUSES_IGNORE);
+					best.setTourArray(local_current_tour);
 				}
 			}
 		}
@@ -190,6 +179,7 @@ int main(int arvc, char* argv[])
 {
 	initCity();
 	Tour best(allCitys);
-	int thread_count = strtol(argv[1], NULL, 10);
-	getApproximateyResult(thread_count);
+	getApproximateyResult();
+
+	system("pause");
 }

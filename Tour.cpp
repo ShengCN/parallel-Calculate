@@ -1,6 +1,4 @@
-//
-// Created by CodingBlack on 16/7/6.
-//
+
 
 #include "Tour.h"
 #include <stdlib.h>
@@ -26,7 +24,6 @@ vector<City> Tour::getTour()
     return tour;
 }
 
-//产生随机个体
 void Tour::generateIndividual()
 {
     for(int cityIndex = 0; cityIndex < allCity.size();++cityIndex)
@@ -61,6 +58,26 @@ void Tour::setTour(vector<City> cities)
 void Tour::resetDis()
 {
 	distance = 0;
+}
+
+void Tour::setTourArray(int* tourAry)
+{
+	vector<City> tmp;
+	for(auto in =0; in<city_num;++in)
+	{
+		tmp.push_back(tourAry[in]);
+	}
+}
+
+int* Tour::getTourArray()
+{
+	int tourCity[city_num];
+	int index = 0;
+	for(auto i:tour)
+	{
+		tourCity[index++] = i.getId();
+	}
+	return tourCity;
 }
 
 int Tour::getDistance()
