@@ -4,10 +4,9 @@
 #include <fstream>
 #include <vector>
 #include <random>
-#include <omp.h>
 #include <math.h>
-#include "../../Parallel/Tour.h"
-#include "../../Parallel/city.h"
+#include "Tour.h"
+#include "city.h"
 #include <mpi.h>
 using std::cout;
 using std::fstream;
@@ -133,10 +132,10 @@ void getApproximateyResult(int thread=0)
 
 			for(int src = 1; src<comm_sz;++src)
 			{
-				MPI_Recv(&local_current_dis, sizeof(local_current_dis), MPI_INT, src, 0, MPI_COMM_WORLD, MPI_STATUSES_IGNORE);
+				MPI_Recv(&local_current_dis, 1, MPI_INT, src, 0, MPI_COMM_WORLD, MPI_STATUSES_IGNORE);
 				if(best.getDistance()>local_current_dis)
 				{
-					MPI_Recv(&local_current_tour, 20, MPI_INT, src, 1, MPI_COMM_WORLD, MPI_STATUSES_IGNORE);
+					MPI_Recv(&local_current_tour, test1, MPI_INT, src, 1, MPI_COMM_WORLD, MPI_STATUSES_IGNORE);
 					best.setTourArray(local_current_tour);
 				}
 			}
@@ -181,5 +180,4 @@ int main(int arvc, char* argv[])
 	Tour best(allCitys);
 	getApproximateyResult();
 
-	system("pause");
 }
