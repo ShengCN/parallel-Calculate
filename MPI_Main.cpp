@@ -1,13 +1,14 @@
-﻿#include <iostream>
+#include <iostream>
 #include <math.h>
 #include <stdlib.h>
 #include <fstream>
 #include <vector>
 #include <random>
+#include <mpi.h>
+#include <omp.h>
 #include <math.h>
 #include "Tour.h"
 #include "city.h"
-#include <mpi.h>
 using std::cout;
 using std::fstream;
 using std::endl;
@@ -50,14 +51,14 @@ void initArray()
 }
 
 // 获取近似解
-void getApproximateyResult(int thread=0)
+void getApproximateyResult(int thread)
 {
 	random_device rd;
-	// 冷却概率
-	double coolingRate = 0.003;
-	int n = 10;
+	
+	double coolingRate = 0.3;
+	int n = 100000;
 
-	// 初始的解决方案
+	
 	Tour currentSolution(allCitys);
 	currentSolution.generateIndividual();
 
@@ -65,63 +66,73 @@ void getApproximateyResult(int thread=0)
 	cout << endl;
 	std::cout << "Initial solution distance: " << currentSolution.getDistance() << endl;
 
-	// 设置当前为最优的方案
+	
 	Tour best(currentSolution.getTour(), allCitys);
 
 	auto local_currentSolution = best;
 	auto local_best = best;
 	int i;
-	int* local_current_tour = best.getTourArray();
+
+	
+	int blockLength[] = {16,4,16};
+	MPI::Datatype oldTypes[] = { MPI_COMBINER_VECTOR,MPI_INT,MPI_COMBINER_VECTOR };
+	
+	MPI::Aint addressOffsets[] = { 0,16,20 };
+	MPI::Datatype newType = MPI::Datatype::Create_struct(
+		sizeof(blockLength) / sizeof(int),
+		blockLength,
+		addressOffsets,
+		oldTypes
+	);
+	newType.Commit();
+	
 
 	int my_rank, comm_sz;
-	// parallel region
+	
 	MPI_Init(NULL, NULL);
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
 
-	// 循环直到系统冷却
+	
 	for (double initialTemprature = INITIAL_TEMPERATURE; initialTemprature > 1; initialTemprature *= 1 - coolingRate)
 	{
 
 		local_currentSolution = best;
-		auto local_current_dis = local_currentSolution.getDistance();
-		// parallel calculate
+
+		
 		for (i = my_rank*(n / comm_sz); i < (my_rank + 1)*(n / comm_sz); ++i)
 		{
-			// 生成一个邻居
+			
 			Tour newSolution(local_currentSolution.getTour(), allCitys);
 
-			// 获得随机位置
+			
 			int tourPos1 = abs((int)(rd() % newSolution.getTourSize()));
 			int tourPos2 = abs((int)(rd() % newSolution.getTourSize()));
 
 			City citySwap1 = newSolution.getCity(tourPos1);
 			City citySwap2 = newSolution.getCity(tourPos2);
 
-			// 交换
+			
 			newSolution.setCity(tourPos2, citySwap1);
 			newSolution.setCity(tourPos1, citySwap2);
 
-			// 获得新的解决方案的话费
+			
 			int currentEnergy = local_currentSolution.getDistance();
 			int neighbourEnergy = newSolution.getDistance();
 			auto rate = (rd() % 10000)*0.0001;
 			auto accept = acceptanceProbability(currentEnergy, neighbourEnergy, initialTemprature);
 
-			// 决定是否用新的方案
+			
 			if (accept > rate)
 			{
 				local_currentSolution.setTour(newSolution.getTour());
 			}
 		}
 
-		// local_best 重新更新值
-		// send and receive to get 
+	
 		if (my_rank != 0)
 		{
-			MPI_Send(&local_current_dis, 1, MPI_INT, 0,0,MPI_COMM_WORLD);
-			local_current_tour = local_currentSolution.getTourArray();
-			MPI_Send(&local_current_tour, test1, MPI_INT, 0, 1, MPI_COMM_WORLD);
+			MPI_Send(&local_currentSolution, sizeof(local_currentSolution), newType, 0,0,MPI_COMM_WORLD);
 		}
 		else
 		{
@@ -132,16 +143,15 @@ void getApproximateyResult(int thread=0)
 
 			for(int src = 1; src<comm_sz;++src)
 			{
-				MPI_Recv(&local_current_dis, 1, MPI_INT, src, 0, MPI_COMM_WORLD, MPI_STATUSES_IGNORE);
-				if(best.getDistance()>local_current_dis)
+				MPI_Recv(&local_currentSolution, sizeof(local_currentSolution), newType, src, 0, MPI_COMM_WORLD, MPI_STATUSES_IGNORE);
+				if(best.getDistance()>local_currentSolution.getDistance())
 				{
-					MPI_Recv(&local_current_tour, test1, MPI_INT, src, 1, MPI_COMM_WORLD, MPI_STATUSES_IGNORE);
-					best.setTourArray(local_current_tour);
+					best = local_currentSolution;
 				}
 			}
 		}
 	}
-	// end MPI
+	
 	MPI_Finalize();
 	cout << "==============================================" << endl;
 
@@ -153,7 +163,6 @@ void getApproximateyResult(int thread=0)
 		cout << index.getId() << "----->";
 	}
 	cout << endl;
-//	cout << "And the time is:" << (finish - start) << endl;
 	cout << "==============================================" << endl;
 	cout << endl << endl;
 
@@ -178,6 +187,6 @@ int main(int arvc, char* argv[])
 {
 	initCity();
 	Tour best(allCitys);
-	getApproximateyResult();
-
+	int thread_count = strtol(argv[1], NULL, 10);
+	getApproximateyResult(thread_count);
 }
