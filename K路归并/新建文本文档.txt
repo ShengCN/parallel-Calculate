@@ -1,0 +1,53 @@
+///*
+// * description: binary search function(row or column)
+// * input:		start----start Point
+// *				  end----end Point
+// *          searchKey----key to be searched
+// *                isX----row or column
+// * output:      the first smaller one than searchKey
+// *
+// */
+//int binarySearch(TwoDimIndex start, TwoDimIndex end, int searchKey, bool isX);
+int binarySearch(TwoDimIndex start, TwoDimIndex end, int searchKey, bool isX)
+{
+	if (isX)
+	{
+		// row search
+		auto rowIndex = start.x;
+		auto local_start = start.y, local_end = end.y;
+		while (local_start <= local_end)
+		{
+			auto mid = local_start + (local_end - local_start) / 2;
+			if (k_route_matrix[rowIndex][mid] < searchKey)
+				local_start = mid + 1;
+			else if (k_route_matrix[rowIndex][mid] > searchKey)
+				local_end = mid - 1;
+			else
+				return mid;
+		}
+		if (searchKey <= k_route_matrix[start.x][start.y])
+			return 0;
+		else
+			return end.y;
+	}
+	else
+	{
+		// column search
+		auto columnIndex = start.y;
+		auto local_start = start.x, local_end = end.x;
+		while (local_start <= local_end)
+		{
+			auto mid = local_start + (local_end - local_start) / 2;
+			if (k_route_matrix[mid][columnIndex] < searchKey)
+				local_start = mid + 1;
+			else if (k_route_matrix[mid][columnIndex] > searchKey)
+				local_end = mid - 1;
+			else
+				return mid;
+		}
+		if (searchKey <= k_route_matrix[start.x][start.y])
+			return 0;
+		else
+			return end.x;
+	}
+}
