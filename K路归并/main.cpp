@@ -1,7 +1,8 @@
-#include<iostream>
-#include<vector>
-#include<fstream>
-#include<string>
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <string>
+#include <omp.h>
 #include <algorithm>
 
 using std::vector;
@@ -15,6 +16,7 @@ int k; // k route
 int leftSize; // left numbers 
 vector<vector<int>> k_route_matrix;
 vector<int> leftNumbers;
+int thread;
 
 /*
  * description: init array function
@@ -56,18 +58,15 @@ void printAll()
 	cout << endl << endl;
 }
 
-int main()
+int main(int argvc,char* argv[])
 {
+	thread = strtol(argv[1], NULL, 10);
 	vector<int> k_route_matrix;
 	for (auto i = 1; i <= 3; ++i)
 	{
 		if (initArray(i))
 		{
 			auto res = k_merge();
-			for (auto i:res)
-			{
-				cout << i << "\t" << endl;
-			}
 		}
 		else
 			cout << "Can't open file " << i << endl;
@@ -95,102 +94,124 @@ bool initArray(int n)
 
 vector<int> k_merge()
 {
+	// set thread
+	omp_set_num_threads(thread);
+	double start, finish;
+	start = omp_get_wtime();
+
 	/********------|||||///////************/
 	auto row = k_route_matrix.size();
 	auto column = k_route_matrix[0].size();
 
-	// ----
-	for (int i = 0; i < row; ++i)
+#pragma omp parallel \
+	default(none) shared(k_route_matrix) private()
 	{
-		std::sort(k_route_matrix[i].begin(), k_route_matrix[i].end());
-	}
-	//printAll();
-
-	// ||||
-	for (int j = 0; j < column; ++j)
-	{
-		vector<int> buffer;
+		// ----
+#pragma omp for 
 		for (int i = 0; i < row; ++i)
 		{
-			buffer.push_back(k_route_matrix[i][j]);
+			std::sort(k_route_matrix[i].begin(), k_route_matrix[i].end());
 		}
-		std::sort(buffer.begin(), buffer.end());
-		// write back
-		for (int i = 0; i < row; ++i)
-		{
-			k_route_matrix[i][j] = buffer[i];
-		}
-	}
-//	printAll();
+		//printAll();
 
-	//  /////
-	// fisrt session
-	int slopeTimes = row - 1;
-	int count;
-	for (int i = slopeTimes; i > 0; --i)
-	{
-		count = 1;
-		for (int j = 0; j < column + row - 1; ++j)
+		// ||||
+#pragma omp for
+		for (int j = 0; j < column; ++j)
 		{
 			vector<int> buffer;
-			int local_y = j, local_x = 0;
-			for (; local_x < row; local_x = local_x + i)
+			for (int i = 0; i < row; ++i)
 			{
-				if (local_y >= 0 && local_y < column)
-				{
-					buffer.push_back(k_route_matrix[local_x][local_y]);
-				}
-				local_y -= count;
+				buffer.push_back(k_route_matrix[i][j]);
 			}
 			std::sort(buffer.begin(), buffer.end());
 			// write back
-			int buffer_index = 0;
-			local_y = j , local_x = 0;
-			for (; local_x < row; local_x = local_x + i)
+			for (int i = 0; i < row; ++i)
 			{
-				if (local_y >= 0 && local_y < column)
-				{
-					k_route_matrix[local_x][local_y] = buffer[buffer_index++];
-				}
-				local_y -= count;
+				k_route_matrix[i][j] = buffer[i];
 			}
 		}
-		count++;
-//		printAll();
 	}
-	// second session
-	slopeTimes = column - 1;
-	for (int i = 1; i <= slopeTimes; ++i)
-	{
-		count = 1;
-		for (int j = 0; j < row + column - 1; ++j)
-		{
-			vector<int> buffer;
-			int local_x = j, local_y = 0;
-			for (; local_y < column; local_y = local_y + i)
-			{
-				if (local_x >= 0 && local_x < row)
-				{
-					buffer.push_back(k_route_matrix[local_x][local_y]);
-				}
-				local_x -= count;
-			}
-			std::sort(buffer.begin(), buffer.end());
-			// write back
-			int buffer_index = buffer.size() - 1;
-			local_x = j , local_y = 0;
-			for (; local_y < column; local_y = local_y + i)
-			{
-				if (local_x >= 0 && local_x < row)
-				{
-					k_route_matrix[local_x][local_y] = buffer[buffer_index--];
-				}
-				local_x -= count;
-			}
-		}
-		count++;
-	}
+		//	printAll();
 
+			//  /////
+			// fisrt session
+		int slopeTimes = row - 1;
+		int count;
+
+		for (int i = slopeTimes; i > 0; --i)
+		{
+#pragma omp parallel \
+	default(none) shared(k_route_matrix) private(count)
+		{
+			count = 1;
+#pragma omp for
+			for (int j = 0; j < column + row - 1; ++j)
+			{
+				vector<int> buffer;
+				int local_y = j, local_x = 0;
+				for (; local_x < row; local_x = local_x + i)
+				{
+					if (local_y >= 0 && local_y < column)
+					{
+						buffer.push_back(k_route_matrix[local_x][local_y]);
+					}
+					local_y -= count;
+				}
+				std::sort(buffer.begin(), buffer.end());
+				// write back
+				int buffer_index = 0;
+				local_y = j, local_x = 0;
+				for (; local_x < row; local_x = local_x + i)
+				{
+					if (local_y >= 0 && local_y < column)
+					{
+						k_route_matrix[local_x][local_y] = buffer[buffer_index++];
+					}
+					local_y -= count;
+				}
+			}
+			count++;
+			//		printAll();
+		}
+		}
+
+		// second session
+		slopeTimes = column - 1;
+		for (int i = 1; i <= slopeTimes; ++i)
+		{
+#pragma omp parallel \
+	default(none) shared(k_route_matrix) private(count)
+		{
+			count = 1;
+#pragma omp for
+			for (int j = 0; j < row + column - 1; ++j)
+			{
+				vector<int> buffer;
+				int local_x = j, local_y = 0;
+				for (; local_y < column; local_y = local_y + i)
+				{
+					if (local_x >= 0 && local_x < row)
+					{
+						buffer.push_back(k_route_matrix[local_x][local_y]);
+					}
+					local_x -= count;
+				}
+				std::sort(buffer.begin(), buffer.end());
+				// write back
+				int buffer_index = buffer.size() - 1;
+				local_x = j, local_y = 0;
+				for (; local_y < column; local_y = local_y + i)
+				{
+					if (local_x >= 0 && local_x < row)
+					{
+						k_route_matrix[local_x][local_y] = buffer[buffer_index--];
+					}
+					local_x -= count;
+				}
+			}
+			count++;
+		}
+		}
 //	printAll();
 
 	// insert point
@@ -211,6 +232,13 @@ vector<int> k_merge()
 			result.push_back(k_route_matrix[i][j]);
 		}
 	}
+	finish = omp_get_wtime();
+	
+	cout << endl << endl;
+	cout << "=================================" << endl;
+	cout << "Thread is: " << thread << endl;
+	cout << "Merge ended. Time is: " << finish - start << endl;
+
 	return result;
 }
 
@@ -262,6 +290,7 @@ bool inputArray(const string file)
 			}
 		}
 		k_route_matrix.push_back(buffer);
+		cout << "\n\n" << file << " loading end." << "\n\n";
 		return true;
 	}
 }

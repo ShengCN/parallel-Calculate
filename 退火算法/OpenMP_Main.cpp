@@ -87,7 +87,7 @@ void getApproximateyResult(int thread)
 		{
 			local_currentSolution = best;
 #pragma omp for schedule(static,n/thread)
-		for (i = omp_get_thread_num()*(n/thread); i <(omp_get_thread_num()+1)*(n/thread) ; ++i)
+		for (i = 0; i < n; ++i)
 			{
 				// 生成一个邻居
 				Tour newSolution(local_currentSolution.getTour(), allCitys);
@@ -123,7 +123,7 @@ void getApproximateyResult(int thread)
 					best.setTour(local_currentSolution.getTour());
 				}
 			}
-	}
+		}
 
 		// local_best 重新更新值
 		for (auto in : results)
